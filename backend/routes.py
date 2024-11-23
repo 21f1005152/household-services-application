@@ -24,7 +24,7 @@ def login():
         return jsonify({"message": "User not found"}), 404
     
     if verify_password(password, user.password):
-        return jsonify({"token": user.get_auth_token(), "email": user.email, "role": user.roles[0].name, "id":user.id}), 404
+        return jsonify({"token": user.get_auth_token(), "email": user.email, "role": user.roles[0].name, "id":user.id}), 200
 
     return jsonify({"message": "password wrong"}), 404
 
