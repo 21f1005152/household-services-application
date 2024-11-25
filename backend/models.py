@@ -4,25 +4,6 @@ from flask_security import Security, SQLAlchemyUserDatastore, UserMixin, RoleMix
 
 db = SQLAlchemy()
 
-# class User(db.Model, UserMixin):
-#     id = db.Column(db.Integer, primary_key=True)
-#     name = db.Column(db.String(255), nullable=False)
-#     email = db.Column(db.String(255), unique=True, nullable=False)
-#     password = db.Column(db.String(255), nullable=False)
-#     fs_uniquifier = db.Column(db.String(255), unique=True, nullable=False)
-#     reg_info = db.Column(db.Boolean, default=False)
-#     active = db.Column(db.Boolean, default=True)
-#     roles = db.relationship('Role', secondary='user_roles', backref='users')
-#     customer_service_requests = db.relationship(
-#         "ServiceRequest",
-#         foreign_keys="[ServiceRequest.customer_id]",
-#         back_populates="customer"
-#     )
-#     professional_service_requests = db.relationship(
-#         "ServiceRequest",
-#         foreign_keys="[ServiceRequest.professional_id]",
-#         back_populates="professional"
-#     )
 
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
@@ -88,29 +69,7 @@ class ServiceProfessional(db.Model):
     service_number = db.Column(db.Integer, nullable=False, default=0)  #number of services provided.
     verified = db.Column(db.Boolean, default=False)
     doc_link = db.Column(db.String, nullable=True)
-    # service_requests = db.relationship("ServiceRequest", back_populates="professional")
 
-# class ServiceRequest(db.Model):
-#     __tablename__ = 'service_requests'
-#     id = db.Column(db.Integer, primary_key=True)
-#     service_id = db.Column(db.Integer, db.ForeignKey('service.id'), nullable=False)
-#     customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'), nullable=False)
-#     professional_id = db.Column(db.Integer, db.ForeignKey('service_professionals.id'), nullable=True)
-#     time_of_request = db.Column(db.DateTime, index=True, default=datetime.now())
-#     status = db.Column(db.String(255), nullable=False, default='pending')
-#     remarks = db.Column(db.Text, nullable=True)
-
-#     service = db.relationship("Service", back_populates="service_requests")
-#     customer = db.relationship(
-#         "User",
-#         foreign_keys=[customer_id],
-#         back_populates="customer_service_requests"
-#     )
-#     professional = db.relationship(
-#         "User",
-#         foreign_keys=[professional_id],
-#         back_populates="professional_service_requests"
-#     )
 
 class ServiceRequest(db.Model):
     __tablename__ = 'service_requests'

@@ -1,6 +1,6 @@
 from flask import current_app as app, jsonify, request, render_template
 from flask_login import current_user
-from backend.models import Customer, db, Role, User
+from backend.models import Customer, Service, ServiceProfessional, db, Role, User
 from flask_security import auth_required, verify_password, hash_password
 from backend.models import db, User, Role
 
@@ -102,6 +102,63 @@ def register_customer():
     except:
         db.session.rollback()
         return jsonify({'message': 'An error has occurred'}), 500
+
+
+@app.route('/register/service-professional', methods=['POST'])
+@auth_required('token')
+def register_service_professional():
+    data = request.get_json()
+
+    phone = data.get('phone')
+    pin_code = data.get('pin_code')
+    experience_years = data.get('experience_years')
+    service_id = data.get('service_id')
+    doc_link = data.get('doc_link')
+
+    if not phone or not pin_code or not service_id:
+        return jsonify({'message': 'Phone, Pin Code, and Service ID are required'}), 400
+
+    if not phone.isdigit() or len(phone) != 10:
+        return jsonify({'message': 'Invalid phone number'}), 400
+
+    if not pin_code.isdigit() or len(pin_code) != 6:
+        return jsonify({'message': 'Invalid pin code'}), 400
+
+    service = Service.query.get(service_id)
+    if not service:
+        return jsonify({'message': 'Invalid Service ID'}), 400
+
+    if not current_user.has_role('service_provider'):
+        return jsonify({'message': 'User is not authorized as a service professional'}), 403
+
+    user = User.query.get(current_user.id)
+    if not user:
+        return jsonify({'message': 'User not found'}), 404
+    user.reg_info = True
+
+    existing_professional = ServiceProfessional.query.filter_by(user_id=current_user.id).first()
+    if existing_professional:
+        return jsonify({'message': 'User is already registered as a service professional'}), 400
+
+    # Create new ServiceProfessional
+    new_professional = ServiceProfessional(
+        user_id=current_user.id,
+        phone=phone,
+        pin_code=pin_code,
+        experience_years=experience_years,
+        service_id=service_id,
+        doc_link=doc_link,
+        verified=False
+    )
+
+    try:
+        db.session.add(new_professional)
+        db.session.commit()
+        return jsonify({'message': 'Service professional profile registered successfully'}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': f'An error occurred: {str(e)}'}), 500
+
 
 
 @app.route('/protected')
