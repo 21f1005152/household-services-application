@@ -1,5 +1,6 @@
 from flask import current_app as app, jsonify, request, render_template
-from backend.models import db, Role, User
+from flask_login import current_user
+from backend.models import Customer, db, Role, User
 from flask_security import auth_required, verify_password, hash_password
 from backend.models import db, User, Role
 
@@ -51,7 +52,56 @@ def register():
     except:
         db.session.rollback()
         return jsonify({"message": "Error creating user"}), 404
+    
 
+
+@app.route('/register/customer', methods=['POST'])
+@auth_required('token')
+def register_customer():
+    data = request.get_json()
+
+    phone = data.get('phone')
+    address = data.get('address')
+    city = data.get('city')
+    pin_code = data.get('pin_code')
+
+    if not phone or not address or not city or not pin_code:
+        return jsonify({'message': 'All fields are required'}), 400
+
+    if phone.isdigit() == False or len(phone) != 10:
+        return jsonify({'message': 'Invalid phone number'}), 400
+    
+    if pin_code.isdigit() == False or len(pin_code) != 6:
+        return jsonify({'message': 'Invalid pin code'}), 400
+
+    if not current_user.has_role('customer'):
+        return jsonify({'message': 'User is not authorized as a customer'}), 403
+
+    user = User.query.get(current_user.id)
+    if not user:
+        return jsonify({'message': 'User not found'}), 404
+
+    if not user.name or not user.email or not user.password:
+        return jsonify({'message': 'User profile is incomplete'}), 400
+
+    user.reg_info = True
+
+    new_customer = Customer(
+        user_id=current_user.id,
+        phone=phone,
+        address=address,
+        city=city,
+        pin_code=pin_code, 
+        verified=True 
+    )
+
+    try:
+        db.session.add(new_customer)
+        db.session.commit()
+        return jsonify({'message': 'Customer profile updated'}), 201
+    except:
+        db.session.rollback()
+        return jsonify({'message': 'An error has occurred'}), 500
 
 
 @app.route('/protected')

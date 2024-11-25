@@ -3,7 +3,7 @@ export default{
     <div>
         <input placeholder="email" v-model="email" />
         <input placeholder="password" v-model="password" />
-        <button @click.prevent="submitLogin">Login</button>
+        <button class="btn btn-primary" @click.prevent="submitLogin">Login</button>
     </div>
     `,
     data(){

@@ -2,7 +2,7 @@ import LoginPage from '../pages/LoginPage.js';
 import RegisterPage from '../pages/RegisterPage.js';
 
 const Home = {
-    template : `<h1>this is Home</h1>`
+    template : `<h1>This is Home</h1>`
 }
 
 
