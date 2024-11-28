@@ -61,7 +61,7 @@ class ServiceAPI(Resource):
 
 class ServiceListAPI(Resource):
     @marshal_with(service_fields)
-    @auth_required('token')
+    # @auth_required('token')
     def get(self):
         services = Service.query.all()
         return services

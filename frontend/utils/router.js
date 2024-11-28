@@ -2,8 +2,13 @@ import LoginPage from '../pages/LoginPage.js';
 import RegisterPage from '../pages/RegisterPage.js';
 
 const Home = {
-    template : `<h1>This is Home</h1>`
-}
+    template: `
+    <div class="container mt-5 text-center">
+        <h1 class="display-4">Welcome to the Home Page</h1>
+        <p class="lead">This is the main landing page of the application. Enjoy your stay!</p>
+    </div>
+    `
+};
 
 
 
