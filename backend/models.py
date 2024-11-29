@@ -27,6 +27,41 @@ class User(db.Model, UserMixin):
         back_populates="professional"
     )
 
+    def to_dict(self):
+        """Convert User object to dictionary."""
+        data = {
+            'id': self.id,
+            'name': self.name,
+            'email': self.email,
+            'reg_info': self.reg_info,
+            'active': self.active,
+            'roles': [role.name for role in self.roles],  # List of role names
+        }
+
+        # Add customer-related service requests if needed
+        if self.customer_service_requests:
+            data['customer_service_requests'] = [
+                {
+                    'id': request.id,
+                    'status': request.status,
+                    'remarks': request.remarks
+                }
+                for request in self.customer_service_requests
+            ]
+
+        # Add professional-related service requests if needed
+        if self.professional_service_requests:
+            data['professional_service_requests'] = [
+                {
+                    'id': request.id,
+                    'status': request.status,
+                    'remarks': request.remarks
+                }
+                for request in self.professional_service_requests
+            ]
+
+        return data
+
 class Role(db.Model, RoleMixin):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), unique=True, nullable=False)
@@ -77,9 +112,10 @@ class ServiceRequest(db.Model):
     service_id = db.Column(db.Integer, db.ForeignKey('service.id'), nullable=False)
     customer_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     professional_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    time_of_request = db.Column(db.DateTime, index=True, default=datetime.now())
+    time_of_request = db.Column(db.DateTime, index=True, default=datetime.utcnow())
     status = db.Column(db.String(255), nullable=False, default='pending')
     remarks = db.Column(db.Text, nullable=True)
+    ratings = db.Column(db.Integer, nullable=True)
     
     service = db.relationship("Service", back_populates="service_requests")
     customer = db.relationship(
