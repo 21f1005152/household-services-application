@@ -27,11 +27,11 @@ export default {
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span><strong>Pin Code:</strong></span>
-                        <span>{{ user.serviceProviderDetails.pinCode || 'N/A' }}</span>
+                        <span>{{ user.serviceProviderDetails.pin_code || 'N/A' }}</span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span><strong>Experience:</strong></span>
-                        <span>{{ user.serviceProviderDetails.experienceYears || 'N/A' }} years</span>
+                        <span>{{ user.serviceProviderDetails.experience_years || 'N/A' }} years</span>
                     </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span><strong>Document Link:</strong></span>

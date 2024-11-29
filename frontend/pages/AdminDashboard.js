@@ -85,7 +85,7 @@ export default {
                     :user="{
                         name: user.name,
                         email: user.email,
-                        serviceProviderDetails: user.service_provider_details
+                        serviceProviderDetails: user.service_provider_details || {}
                     }" 
                 />
                 <div class="d-flex justify-content-center gap-2 mt-2">

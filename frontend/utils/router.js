@@ -16,8 +16,8 @@ import store from './store.js';
 const Home = {
     template: `
     <div class="container mt-5 text-center">
-        <h1 class="display-4">Welcome to the Home Page</h1>
-        <p class="lead">This is the main landing page of the application. Enjoy your stay!</p>
+        <h1 class="display-4">Welcome to the HOMEFIX</h1>
+        <p class="lead">One stop solution your everyday problems!</p>
     </div>
     `
 };
