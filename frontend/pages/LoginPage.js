@@ -32,7 +32,10 @@ export default {
                                 />
                             </div>
                             <div class="d-grid">
-                                <button class="btn btn-dark" type="submit">Login</button>
+                            <button class="btn btn-dark" type="submit" :disabled="loading">
+                            <span v-if="loading">Logging in...</span>
+                            <span v-else>Login</span>
+                        </button>
                             </div>
                         </form>
                     </div>
@@ -45,28 +48,52 @@ export default {
         return {
             email: null,
             password: null,
+            loading: false, 
         };
     },
+
     methods: {
         async submitLogin() {
+            this.loading = true; // Set loading to true
             try {
-                const res = await fetch(location.origin + '/login', {
+                const res = await fetch('/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email: this.email, password: this.password }),
                 });
-
+        
+                const data = await res.json();
+                this.loading = false; // Reset loading state
+        
                 if (!res.ok) {
-                    const errorDetails = await res.json();
-                    console.error('Login failed:', errorDetails);
+                    alert(`Login failed: ${data.message}`);
                     return;
                 }
-
-                const data = await res.json();
-                console.log('We are logged in:', data);
+        
+                // Save user data and commit to store
+                localStorage.setItem('user', JSON.stringify({ email: data.email, role: data.role, id: data.id, token: data.token }));
+                this.$store.commit('setUser', data);
+                alert('Login successful!');
+        
+                // Redirect based on role
+                if (data.role === 'admin') {
+                    this.$router.push('/admin');
+                } else if (data.role === 'customer') {
+                    this.$router.push('/customer-dashboard');
+                } else if (data.role === 'service_provider') {
+                    this.$router.push('/service-provider-dashboard');
+                } else {
+                    alert('Invalid user role!');
+                    this.$router.push('/login');
+                }
             } catch (error) {
+                this.loading = false; // Reset loading state
                 console.error('Error during login:', error);
+                alert('An unexpected error occurred. Please try again.');
             }
-        },
+        }
     },
 };
+
+
+

@@ -11,23 +11,64 @@ datastore = app.security.datastore
 def hello():
     return render_template('index.html')
 
+# @app.route('/login', methods=['POST'])
+# def login():
+#     data = request.get_json() #gets the data, initially in string format, and converts it to json format.
+#     email = data.get('email') #we use this instead of [] method because, in the block method if key is not present it will throw an error, but in this method it will return None.
+#     password = data.get('password')
+
+#     if(not email or not password):
+#         return jsonify({"message": "Email and password are required"}), 404
+
+#     user = datastore.find_user(email=email)
+#     if(not user):
+#         return jsonify({"message": "User not found"}), 404
+    
+#     if verify_password(password, user.password):
+#         return jsonify({"token": user.get_auth_token(), "email": user.email, "role": user.roles[0].name, "id":user.id}), 200
+
+#     return jsonify({"message": "password wrong"}), 404
+
 @app.route('/login', methods=['POST'])
 def login():
-    data = request.get_json() #gets the data, initially in string format, and converts it to json format.
-    email = data.get('email') #we use this instead of [] method because, in the block method if key is not present it will throw an error, but in this method it will return None.
+    # Parse JSON data from the request
+    data = request.get_json()
+
+    # Extract email and password
+    email = data.get('email')
     password = data.get('password')
 
-    if(not email or not password):
-        return jsonify({"message": "Email and password are required"}), 404
+    # Validate presence of email and password
+    if not email or not password:
+        return jsonify({"message": "Email and password are required"}), 400  # 400 Bad Request
 
+    # Find user by email
     user = datastore.find_user(email=email)
-    if(not user):
-        return jsonify({"message": "User not found"}), 404
-    
-    if verify_password(password, user.password):
-        return jsonify({"token": user.get_auth_token(), "email": user.email, "role": user.roles[0].name, "id":user.id}), 200
+    if not user:
+        return jsonify({"message": "User not found"}), 404  # 404 Not Found
 
-    return jsonify({"message": "password wrong"}), 404
+    # Validate password
+    if not verify_password(password, user.password):
+        return jsonify({"message": "Incorrect password"}), 401  # 401 Unauthorized
+
+    # Validate if the user is active
+    if not user.active:
+        return jsonify({"message": "Account is inactive. Please contact support."}), 403  # 403 Forbidden
+
+    # Extract user role safely
+    role = user.roles[0].name if user.roles else None
+
+    # Generate token (using user.get_auth_token() for now, JWT can be added later)
+    token = user.get_auth_token()
+
+    # Return success response
+    return jsonify({
+        "message": "Login successful",
+        "token": token,
+        "email": user.email,
+        "role": role,
+        "id": user.id
+    }), 200  # 200 OK
 
 
 # @app.route('/register', methods=['POST'])
@@ -262,6 +303,8 @@ def register_user():
         except Exception as e:
             db.session.rollback()
             return jsonify({'message': f"Error registering service professional: {str(e)}"}), 500
+
+
 
 
 @app.route('/protected')

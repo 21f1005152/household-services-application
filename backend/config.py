@@ -15,9 +15,17 @@ class config():
     SECURITY_PASSWORD_HASH = os.getenv('SECURITY_PASSWORD_HASH')
     SECURITY_PASSWORD_SALT = os.getenv('SECURITY_PASSWORD_SALT')
     SECURITY_TOKEN_AUTHENTHICATION_HEADER = os.getenv('SECURITY_TOKEN_AUTHENTHICATION_TOKEN')
+    
 
 class LocalDevolopmentConfig(config):
     DEBUG = True
+    WTF_CSRF_ENABLED = False 
+    SQLALCHEMY_DATABASE_URI = "sqlite:///db.sqlite3"
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SECRET_KEY = "1234567"
+    SECURITY_PASSWORD_HASH = 'bcrypt'
+    SECURITY_PASSWORD_SALT = 'thisisasecretsalt'
+    SECURITY_TOKEN_AUTHENTHICATION_HEADER = 'Authentication-Token'
 
 
 
