@@ -39,7 +39,6 @@ const routes = [
     {path: '/acceptedsp', component: acceptedsp, meta: {requiresAuth: true}},
     {path: '/stats', component: Stats, meta: {requiresAuth: true}},
     {path: '/sp-history', component: ServiceProviderHistory, meta: {requiresAuth: true, requiresServiceProvider: true}}
-
 ];
 
 

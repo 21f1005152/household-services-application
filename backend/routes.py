@@ -1,4 +1,4 @@
-from flask import current_app as app, jsonify, request, render_template
+from flask import Blueprint, current_app as app, jsonify, request, render_template
 from flask_login import current_user
 from sqlalchemy import func
 from backend.models import Customer, Service, ServiceProfessional, ServiceRequest, db, Role, User
@@ -487,3 +487,50 @@ def process_payment(request_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'message': f'Error processing payment: {str(e)}'})
+    
+
+
+
+service_provider_api = Blueprint('service_provider_api', __name__)
+
+@service_provider_api.route('/api/service-requests/provider/completed', methods=['GET'])
+@auth_required('token')
+def get_completed_service_requests():
+    try:
+        # Ensure the user is a service provider
+        if not current_user.has_role('service_provider'):
+            return jsonify({'message': 'Unauthorized access'}), 403
+
+        # Fetch all completed (paid) service requests for the current service provider
+        completed_requests = ServiceRequest.query.filter_by(
+            professional_id=current_user.id,
+            status='paid'
+        ).all()
+
+        # Format the response with additional details
+        requests_data = []
+        for request in completed_requests:
+            service = Service.query.get(request.service_id)
+            customer = User.query.get(request.customer_id)
+
+            requests_data.append({
+                'id': request.id,
+                'service_id': request.service_id,
+                'service_name': service.name if service else 'Unknown Service',
+                'remarks': request.remarks,
+                'time_of_request': request.time_of_request,
+                'customer_id': request.customer_id,
+                'customer': {
+                    'name': customer.name if customer else 'N/A',
+                    'email': customer.email if customer else 'N/A',
+                    'customer_details': {
+                        'phone': customer.customer_details.phone if customer and customer.customer_details else 'N/A',
+                        'address': customer.customer_details.address if customer and customer.customer_details else 'N/A',
+                    } if customer else None
+                } if customer else None,
+                'rating': request.rating  # Assuming `rating` is a field in the ServiceRequest model
+            })
+
+        return jsonify(requests_data), 200
+    except Exception as e:
+        return jsonify({'message': f'An error occurred: {str(e)}'}), 500
