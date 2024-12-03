@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Monthly Activity Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            background-color: #007bff;
+            color: white;
+            padding: 20px;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .table th, .table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        .table th {
+            background-color: #007bff;
+            color: white;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.9em;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Monthly Activity Report</h1>
+    </div>
+    <p>Dear {{ customer_name }},</p>
+    <p>Here is the summary of your service requests for the past month:</p>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Service</th>
+                <th>Professional</th>
+                <th>Status</th>
+                <th>Requested At</th>
+                <th>Remarks</th>
+                <th>Ratings</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if service_requests %}
+                {% for request in service_requests %}
+                    <tr>
+                        <td>{{ request.id }}</td>
+                        <td>{{ request.service_name }}</td>
+                        <td>{{ request.professional_name }}</td>
+                        <td>{{ request.status }}</td>
+                        <td>{{ request.time_of_request }}</td>
+                        <td>{{ request.remarks }}</td>
+                        <td>{{ request.ratings }}</td>
+                    </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="6">No service requests found for the past month.</td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+    <p>If you have any questions, feel free to contact us.</p>
+    <p>Thank you for using our services!</p>
+    <div class="footer">
+        &copy; Household Services. All rights reserved.
+    </div>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Reminder: Pending Service Requests</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: #fff;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            font-size: 24px;
+            color: #007bff;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .service-request {
+            margin-bottom: 15px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+        .service-request h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        .service-request p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #333;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Daily Reminder</h1>
+        <p>Hello,</p>
+        <p>You have pending service requests assigned to you. Please review and take action on the following requests:</p>
+
+        {% for request in pending_requests %}
+        <div class="service-request">
+            <h3>Service: {{ request.service_name }}</h3>
+            <p><strong>Request ID:</strong> {{ request.id }}</p>
+            <p><strong>Customer Name:</strong> {{ request.customer_name }}</p>
+            <p><strong>Requested On:</strong> {{ request.time_of_request }}</p>
+            <p><strong>Remarks:</strong> {{ request.remarks }}</p>
+        </div>
+        {% endfor %}
+
+        <p>We recommend you take action on these requests as soon as possible.</p>
+        
+        <p>Thank you,<br>Household Services Team</p>
+
+        <div class="footer">
+            <p>This is an automated email. Please do not reply to this email.</p>
+        </div>
+    </div>
+</body>
+</html>
