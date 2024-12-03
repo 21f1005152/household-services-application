@@ -49,104 +49,31 @@ const router = new VueRouter({
 });
 
 router.beforeEach((to, from, next) => {
-    const isLoggedIn = store.state.loggedIn; // Check if user is logged in
-    const userRole = store.state.role; // Current user's role
+    const isLoggedIn = store.state.loggedIn;
+    const userRole = store.state.role; 
 
-    // Define routes that don't require authentication
     const publicRoutes = ['/', '/login', '/register'];
 
-    // Allow access to public routes without checks
     if (publicRoutes.includes(to.path)) {
         return next();
     }
-
-    // Check for authentication requirement
     if (to.matched.some((record) => record.meta.requiresAuth) && !isLoggedIn) {
         alert('You need to log in to access this page.');
-        return next('/login'); // Redirect to login if not authenticated
+        return next('/login');
     }
-
-    // Role-based access control
     if (to.matched.some((record) => record.meta.requiresAdmin) && userRole !== 'admin') {
         alert('Access restricted to admins only.');
-        return next('/'); // Redirect to home if not an admin
+        return next('/');
     }
-
     if (to.matched.some((record) => record.meta.requiresCustomer) && userRole !== 'customer') {
         alert('Access restricted to customers only.');
-        return next('/'); // Redirect to home if not a customer
+        return next('/');
     }
-
     if (to.matched.some((record) => record.meta.requiresServiceProvider) && userRole !== 'service_provider') {
         alert('Access restricted to service providers only.');
-        return next('/'); // Redirect to home if not a service provider
+        return next('/');
     }
-
-    next(); // Allow navigation
+    next(); 
 });
-
-
-// router.beforeEach((to, from, next) => {
-//     const isLoggedIn = store.state.loggedIn;
-//     const userRole = store.state.role;
-
-//     // Check if the route requires authentication
-//     if (to.matched.some(record => record.meta.requiresAuth)) {
-//         if (!isLoggedIn) {
-//             return next('/login'); // Redirect to login if not authenticated
-//         }
-//     }
-
-//     // Check for admin-specific routes
-//     if (to.matched.some(record => record.meta.requiresAdmin)) {
-//         if (userRole !== 'admin') {
-//             return next('/unauthorized'); // Redirect to unauthorized page if not an admin
-//         }
-//     }
-
-//     // Check for customer-specific routes
-//     if (to.matched.some(record => record.meta.requiresCustomer)) {
-//         if (userRole !== 'customer') {
-//             return next('/unauthorized'); // Redirect to unauthorized page if not a customer
-//         }
-//     }
-
-//     // Check for service provider-specific routes
-//     if (to.matched.some(record => record.meta.requiresServiceProvider)) {
-//         if (userRole !== 'service_provider') {
-//             return next('/unauthorized'); // Redirect to unauthorized page if not a service provider
-//         }
-//     }
-
-//     // Allow navigation
-//     next();
-// });
-
-
-
-// // Navigation Guard
-// router.beforeEach((to, from, next) => {
-//     const isLoggedIn = store.state.loggedIn; // Check if user is logged in
-//     const isAdmin = store.state.role === 'admin'; // Check if user is an admin
-
-//     // Check for authentication requirement
-//     if (to.matched.some(record => record.meta.requiresAuth)) {
-//         if (!isLoggedIn) {
-//             alert('You need to log in to access this page.');
-//             return next('/login'); // Redirect to login if not authenticated
-//         }
-//     }
-
-//     // Check for admin requirement
-//     if (to.matched.some(record => record.meta.requiresAdmin)) {
-//         if (!isAdmin) {
-//             alert('Admin access only.');
-//             return next('/'); // Redirect to home if not an admin
-//         }
-//     }
-
-//     // Allow navigation
-//     next();
-// });
 
 export default router;

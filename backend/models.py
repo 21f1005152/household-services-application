@@ -15,12 +15,7 @@ class User(db.Model, UserMixin):
     active = db.Column(db.Boolean, default=True)
     roles = db.relationship('Role', secondary='user_roles', backref='users')
 
-    # Add explicit relationships for service requests
-    customer_service_requests = db.relationship(
-        "ServiceRequest",
-        foreign_keys="[ServiceRequest.customer_id]",
-        back_populates="customer"
-    )
+    customer_service_requests = db.relationship("ServiceRequest", foreign_keys="[ServiceRequest.customer_id]", back_populates="customer")
     professional_service_requests = db.relationship(
         "ServiceRequest",
         foreign_keys="[ServiceRequest.professional_id]",
@@ -28,17 +23,15 @@ class User(db.Model, UserMixin):
     )
 
     def to_dict(self):
-        """Convert User object to dictionary."""
         data = {
             'id': self.id,
             'name': self.name,
             'email': self.email,
             'reg_info': self.reg_info,
             'active': self.active,
-            'roles': [role.name for role in self.roles],  # List of role names
+            'roles': [role.name for role in self.roles], 
         }
 
-        # Add customer-related service requests if needed
         if self.customer_service_requests:
             data['customer_service_requests'] = [
                 {
@@ -49,7 +42,6 @@ class User(db.Model, UserMixin):
                 for request in self.customer_service_requests
             ]
 
-        # Add professional-related service requests if needed
         if self.professional_service_requests:
             data['professional_service_requests'] = [
                 {
@@ -81,7 +73,6 @@ class Customer(db.Model):
     city = db.Column(db.String, nullable=False)
     pin_code = db.Column(db.String, nullable=False)
     verified = db.Column(db.Boolean, default=True)
-    # service_requests = db.relationship("ServiceRequest", back_populates="customer")
 
 class Service(db.Model):
     __tablename__ = 'service'
@@ -91,7 +82,7 @@ class Service(db.Model):
     base_price = db.Column(db.Float, nullable=False)
     user_id = db.Column(db.Integer, default=1)
 
-    service_requests = db.relationship("ServiceRequest", back_populates="service")
+    service_requests = db.relationship("ServiceRequest", back_populates="service", cascade="all, delete-orphan")
 
 class ServiceProfessional(db.Model):
     __tablename__ = 'service_professionals'
@@ -101,10 +92,9 @@ class ServiceProfessional(db.Model):
     pin_code = db.Column(db.String, nullable=False)
     experience_years = db.Column(db.Integer, nullable=True)
     service_id = db.Column(db.Integer, db.ForeignKey('service.id'))
-    service_number = db.Column(db.Integer, nullable=False, default=0)  #number of services provided.
+    service_number = db.Column(db.Integer, nullable=False, default=0) 
     verified = db.Column(db.Boolean, default=False)
     doc_link = db.Column(db.String, nullable=True)
-
 
 class ServiceRequest(db.Model):
     __tablename__ = 'service_requests'
@@ -118,13 +108,5 @@ class ServiceRequest(db.Model):
     ratings = db.Column(db.Integer, nullable=True)
     
     service = db.relationship("Service", back_populates="service_requests")
-    customer = db.relationship(
-        "User",
-        foreign_keys=[customer_id],
-        back_populates="customer_service_requests"
-    )
-    professional = db.relationship(
-        "User",
-        foreign_keys=[professional_id],
-        back_populates="professional_service_requests"
-    )
+    customer = db.relationship("User", foreign_keys=[customer_id], back_populates="customer_service_requests")
+    professional = db.relationship("User", foreign_keys=[professional_id], back_populates="professional_service_requests")

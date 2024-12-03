@@ -26,6 +26,9 @@ class LocalDevolopmentConfig(config):
     SECURITY_PASSWORD_HASH = 'bcrypt'
     SECURITY_PASSWORD_SALT = 'thisisasecretsalt'
     SECURITY_TOKEN_AUTHENTHICATION_HEADER = 'Authentication-Token'
+    CACHE_TYPE = 'RedisCache'
+    CACHE_DEFAULT_TIMEOUT = 30
+    CACHE_REDIS_PORT = 6379
 
 
 

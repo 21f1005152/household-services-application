@@ -1,9 +1,10 @@
-from flask import jsonify, request
+from flask import jsonify, request, current_app as app
 from flask_restful import Api, Resource, fields, marshal_with
 from datetime import datetime
 from backend.models import ServiceRequest, db, Service, User, Customer, ServiceProfessional
-from flask_security import auth_required, current_user
+from flask_security import auth_required, current_user, roles_required
 
+cache = app.cache
 
 api = Api(prefix='/api')
 
@@ -17,8 +18,9 @@ service_fields = {
 }
 
 class ServiceAPI(Resource):
-    @marshal_with(service_fields)
-    # @auth_required('token')
+    @auth_required('token')
+    @cache.memoize(timeout=5)
+    @marshal_with(service_fields) 
     def get(self, id):
         service = Service.query.get(id)
         if not service:
@@ -26,14 +28,13 @@ class ServiceAPI(Resource):
         return service
 
     @auth_required('token')
+    @roles_required('admin')
     def delete(self, id):
         service = Service.query.get(id)
         if not service:
-            # Return a JSON response for "Service not found"
             return jsonify({'message': 'Service not found'})
         
         if service.user_id != current_user.id:
-            # Return a JSON response for "Permission denied"
             return jsonify({'message': 'You do not have permission to delete this service'})
         
         try:
@@ -42,21 +43,18 @@ class ServiceAPI(Resource):
             return jsonify({'message': 'Service deleted successfully'})
         except Exception as e:
             db.session.rollback()
-            # Return error message as JSON
-            # return jsonify({'message': f'Error deleting service: {str(e)}'})
     
     @auth_required('token')
+    @roles_required('admin')
     def put(self, id):
         data = request.get_json()
         service = Service.query.get(id)
         if not service:
             return jsonify({'message': 'Service not found'})
 
-        # Check if the current user owns the service
         if service.user_id != current_user.id:
             return jsonify({'message': 'You do not have permission to update this service'})
 
-        # Update service fields
         service.name = data.get('name', service.name)
         service.description = data.get('description', service.description)
         service.base_price = data.get('base_price', service.base_price)
@@ -69,6 +67,7 @@ class ServiceAPI(Resource):
             return jsonify({'message': f'Error updating service: {str(e)}'})
 
 class ServiceListAPI(Resource):
+    @cache.cached(timeout=5)
     @marshal_with(service_fields)
     def get(self):
         try:
@@ -84,15 +83,12 @@ class ServiceListAPI(Resource):
         description = data.get('description')
         base_price = data.get('base_price')
 
-        # Validate required fields
         if not name or not description or not base_price:
             return jsonify({'message': 'All fields are required'})
 
-        # Check user permissions
-        if current_user.id != 1:  # Replace with your admin logic if needed
+        if current_user.id != 1:
             return jsonify({'message': 'You do not have permission to create this service'})
         
-        # Create the service
         service = Service(name=name, description=description, base_price=base_price)
         try:
             db.session.add(service)
@@ -100,7 +96,7 @@ class ServiceListAPI(Resource):
             return jsonify({"message": "Service created successfully"})
         except Exception as e:
             db.session.rollback()
-            return jsonify({'message': f'Error creating service: {str(e)}'})
+            return jsonify({'message': 'Error in creating service'})
 
 service_request_fields = {
     'id': fields.Integer,
@@ -114,8 +110,9 @@ service_request_fields = {
 }
 
 class ServiceRequestAPI(Resource):
-    @marshal_with(service_request_fields)
     @auth_required('token')
+    @cache.memoize(timeout=5)
+    @marshal_with(service_request_fields)
     def get(self, id):
         service_request = ServiceRequest.query.get(id)
         if not service_request:
@@ -152,13 +149,10 @@ class ServiceRequestAPI(Resource):
         if not Service.query.get(data.get('service_id')):
             return {'message': 'Service not found'}
 
-        # service_request.service_id != data.get('service_id') and
-
         service_request.service_id = data.get('service_id', service_request.service_id)
         service_request.remarks = data.get('remarks', service_request.remarks)
         service_request.status = 'pending'
         service_request.professional_id = None        
-
 
         try:
             db.session.commit()
@@ -171,7 +165,6 @@ class ServiceRequestListAPI(Resource):
     @marshal_with(service_request_fields)
     @auth_required('token')
     def get(self):
-        # Admin can view all, others can only view their own requests
         if current_user.has_role('admin'):
             service_requests = ServiceRequest.query.all()
         else:
@@ -241,19 +234,16 @@ user_fields = {
 
 class FlagUnflagUsers(Resource):
     def put(self, user_id):
-       
         user = User.query.get(user_id)
         if not user:
             return {"message": "User not found"}, 404
-
-        # Toggle the current active state
         user.active = not user.active
         try:
             db.session.commit()
-            return {"message": f"User active state updated to {user.active}"}, 200
-        except Exception as e:
+            return {"message": f"User active state updated to {user.active}"}
+        except:
             db.session.rollback()
-            return {"message": f"An error occurred: {str(e)}"}, 500
+            return {"message": "An error has occurred"}
 
 api.add_resource(FlagUnflagUsers, '/users/<int:user_id>/flag-unflag')
 
@@ -281,46 +271,31 @@ class UserListAPI(Resource):
 api.add_resource(UserListAPI, '/users')
 
 class VerifyServiceProviderAPI(Resource):
-    # @auth_required('token')
     def put(self, user_id):
-        print(f"Verifying service provider with user_id: {user_id}")  # Debug log
-
-        # Find the service provider entry
         service_provider = ServiceProfessional.query.filter_by(user_id=user_id).first()
 
         if not service_provider:
-            print("Service provider not found.")  # Debug log
             return {'message': 'Service provider not found'}
 
-        # Check if the service provider is already verified
         if service_provider.verified:
-            print("Service provider is already verified.")  # Debug log
             return {'message': 'Service provider is already verified'}
 
-        # Update the verified status
         service_provider.verified = True
         try:
             db.session.commit()
-            print("Service provider verified successfully.")  # Debug log
-            return {'message': 'Service provider verified successfully'}, 200
-        except Exception as e:
+            return {'message': 'Service provider verified successfully'}
+        except:
             db.session.rollback()
-            print(f"Error verifying service provider: {str(e)}")  # Debug log
-            return {'message': f'An error occurred: {str(e)}'}
+            return {'message': 'An error occurred'}
 
 api.add_resource(VerifyServiceProviderAPI, '/users/<int:user_id>/verify')
 
 class UserProfileAPI(Resource):
     @auth_required('token')
     def get(self, id):
-        # Fetch the user by ID
         user = User.query.get(id)
         if not user:
             return jsonify({'message': 'User not found'})
-
-        # Ensure the authenticated user is requesting their own profile
-        # if current_user.id != id:
-        #     return jsonify({'message': 'Unauthorized access'})
 
         user_data = {
             'id': user.id,
@@ -331,7 +306,6 @@ class UserProfileAPI(Resource):
             'service_provider_details': None,
         }
 
-        # Include customer details if the user is a customer
         if user.has_role('customer'):
             customer = Customer.query.filter_by(user_id=user.id).first()
             if customer:
@@ -343,7 +317,6 @@ class UserProfileAPI(Resource):
                     'verified': customer.verified,
                 }
 
-        # Include service provider details if the user is a service provider
         if user.has_role('service_provider'):
             service_provider = ServiceProfessional.query.filter_by(user_id=user.id).first()
             if service_provider:
@@ -359,9 +332,7 @@ class UserProfileAPI(Resource):
 
         return jsonify(user_data)
 
-# Add this API endpoint to your routes
 api.add_resource(UserProfileAPI, '/users/<int:id>')
-
 
 class UpdateUserDetailsAPI(Resource):
     @auth_required('token')
@@ -372,7 +343,6 @@ class UpdateUserDetailsAPI(Resource):
 
         data = request.get_json()
 
-        # Update customer details if the user has the 'customer' role
         if user.has_role('customer'):
             customer = Customer.query.filter_by(user_id=user.id).first()
             if not customer:
@@ -383,7 +353,6 @@ class UpdateUserDetailsAPI(Resource):
             customer.city = data.get('city', customer.city)
             customer.pin_code = data.get('pin_code', customer.pin_code)
 
-        # Update service provider details if the user has the 'service_provider' role
         elif user.has_role('service_provider'):
             service_provider = ServiceProfessional.query.filter_by(user_id=user.id).first()
             if not service_provider:
@@ -397,13 +366,12 @@ class UpdateUserDetailsAPI(Resource):
         else:
             return jsonify({'message': 'User role not supported for updates'})
 
-        # Commit changes to the database
         try:
             db.session.commit()
             return jsonify({'message': 'User details updated successfully'})
-        except Exception as e:
+        except:
             db.session.rollback()
-            return jsonify({'message': f'An error occurred: {str(e)}'})
+            return jsonify({'message': 'An error occurred'})
 
 api.add_resource(UpdateUserDetailsAPI, '/users/update-details')
 
@@ -412,40 +380,34 @@ class ServiceProviderRequestsAPI(Resource):
     @marshal_with(service_request_fields)
     @auth_required('token')
     def get(self):
-        # Ensure the user is a service provider
         if not current_user.has_role('service_provider'):
             return {'message': 'Unauthorized'}
 
-        # Get the service provider's service ID
         service_provider = ServiceProfessional.query.filter_by(user_id=current_user.id).first()
         if not service_provider:
             return {'message': 'Service provider details not found'}
 
-        # Fetch service requests matching the provider's service ID and pending status
         service_requests = ServiceRequest.query.filter_by(service_id=service_provider.service_id, status='pending').all()
         return service_requests
 
     @auth_required('token')
     def put(self, request_id):
-        # Find the service request
         service_request = ServiceRequest.query.get(request_id)
         if not service_request:
             return {'message': 'Service request not found'}
 
-        # Ensure the service provider is authorized to accept it
         service_provider = ServiceProfessional.query.filter_by(user_id=current_user.id).first()
         if not service_provider or service_request.service_id != service_provider.service_id:
-            return {'message': 'Unauthorized'}
+            return {'message': 'Service Provider is not authorised to accept'}
 
-        # Update the service request
         service_request.status = 'accepted'
         service_request.professional_id = current_user.id
         try:
             db.session.commit()
             return {'message': 'Service request accepted successfully'}
-        except Exception as e:
+        except:
             db.session.rollback()
-            return {'message': f'An error occurred: {str(e)}'}
+            return {'message': 'An error occurred'}
 api.add_resource(ServiceProviderRequestsAPI, '/service-requests/provider', '/service-requests/provider/<int:request_id>')
 
 
@@ -454,17 +416,14 @@ api.add_resource(ServiceProviderRequestsAPI, '/service-requests/provider', '/ser
 class ServiceProviderProfileAPI(Resource):
     @auth_required('token')
     def get(self, professional_id):
-        # Fetch the service provider details using professional_id
         service_provider = ServiceProfessional.query.filter_by(user_id=professional_id).first()
         if not service_provider:
-            return {'message': 'Service provider not found'}, 404
+            return {'message': 'Service provider not found'}
 
-        # Fetch the corresponding user details
         user = User.query.get(professional_id)
         if not user:
-            return {'message': 'User not found'}, 404
+            return {'message': 'User not found'}
 
-        # Prepare the response
         response = {
             'id': user.id,
             'name': user.name,
@@ -479,33 +438,20 @@ class ServiceProviderProfileAPI(Resource):
                 'doc_link': service_provider.doc_link,
             }
         }
-        return response, 200
+        return response
 
 
 api.add_resource(ServiceProviderProfileAPI, '/service-provider/<int:professional_id>')
 
 
 
-
-# class ServiceProviderInfoPublicAPI(Resource):
-#     @marshal_with(service_provider_fields)
-#     def get(self, user_id):
-#         service_provider = ServiceProfessional.query.filter_by(user_id=user_id, verified=True).first()
-#         if not service_provider:
-#             return {'message': 'Service provider not found or not verified'}
-#         return service_provider
-
-# api.add_resource(ServiceProviderInfoPublicAPI, '/service-providers/<int:user_id>')
-
 class UpdateServiceRequestStatusAPI(Resource):
     @auth_required('token')
     def put(self, id):
-        # Fetch the service request by ID
         service_request = ServiceRequest.query.get(id)
         if not service_request:
             return {"message": "Service request not found"}, 404
 
-        # Ensure the authenticated user owns the service request
         if service_request.customer_id != current_user.id:
             return {"message": "You do not have permission to update this service request"},
 
@@ -515,7 +461,6 @@ class UpdateServiceRequestStatusAPI(Resource):
         if new_status not in ['paid', 'cancelleduser']:
             return {"message": "Invalid status value"}
 
-        # Validate card details if status is 'paid'
         if new_status == 'paid':
             card_details = data.get('cardDetails', {})
             card_number = card_details.get('cardNumber', '')
@@ -526,15 +471,14 @@ class UpdateServiceRequestStatusAPI(Resource):
             if not cvv.isdigit() or len(cvv) != 3:
                 return {"message": "Invalid CVV. Must be a 3-digit number."}
 
-        # Update the status of the service request
         service_request.status = new_status
 
         try:
             db.session.commit()
             return {"message": f"Service request updated to '{new_status}' successfully"}
-        except Exception as e:
+        except:
             db.session.rollback()
-            return {"message": f"An error occurred: {str(e)}"}
+            return {"message": "An error occurred"}
         
 api.add_resource(UpdateServiceRequestStatusAPI, '/service-requests/<int:id>/update-status')
 
