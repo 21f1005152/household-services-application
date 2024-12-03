@@ -1,10 +1,14 @@
-from flask import Blueprint, current_app as app, jsonify, request, render_template
+import os
+from flask import Blueprint, current_app as app, jsonify, request, render_template, send_file, send_from_directory
 from flask_login import current_user
 from sqlalchemy import func
 from backend.models import Customer, Service, ServiceProfessional, ServiceRequest, db, Role, User
-from flask_security import auth_required, verify_password, hash_password
+from flask_security import auth_required, verify_password, hash_password, roles_required
 from backend.models import db, User, Role
-from datetime import datetime
+from datetime import datetime, time
+from backend.celery.tasks import add, create_csv
+from celery.result import AsyncResult
+
 
 
 datastore = app.security.datastore
@@ -14,6 +18,38 @@ cache = app.cache
 @cache.cached(timeout=3)
 def cache():
     return {'tine':str(datetime.utcnow())}
+
+@app.route('/celery')
+def celery():
+    task = add.delay(1,2)
+    return {'message':'Task added to queue', 'task_id':task.id}
+
+@app.route('/celery/result/<task_id>')
+def celery_result(task_id):
+    result = AsyncResult(task_id)
+    if result.ready():
+        return {'status':result.status, 'result':result.result}
+    else:
+        return {'status':result.status}
+
+@app.get('/create-csv')
+def createCSV():
+    task = create_csv.delay()
+    return {'message':'Task added to queue', 'task_id':task.id}
+
+@app.get('/get-csv/<id>')
+def getCSV(id):
+    result = AsyncResult(id)
+    if result.ready():
+        return send_file(f'./backend/celery/user-downloads/{result.result}', as_attachment=True)
+    else:
+        return {'message':'File not ready yet'}
+
+    
+
+
+
+
 
 @app.get('/')   #used instead of app.route('/') so that only get method can use this.
 def hello():

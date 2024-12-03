@@ -1,0 +1,4 @@
+id,name,description,base_price,user_id
+1,Plumbing,"Fix leaks, install pipes, and other plumbing services.",50.0,1
+2,Electrical,"Electrical installations, repairs, and maintenance.",70.0,1
+3,Cleaning,Residential and commercial cleaning services.,40.0,1
